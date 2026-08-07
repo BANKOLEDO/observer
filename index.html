@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0d0e0d">
+<title>observer — the plugin that gives a text-only model eyes</title>
+<meta name="description" content="observer is a two-file opencode plugin that routes images to a tiny vision model, because the DeepSeek API is text-only and returns 'this model does not support image input'.">
+<meta name="author" content="dev_olabanks">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://BANKOLEDO.github.io/observer/">
+
+<!-- favicon -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230d0e0d'/%3E%3Ctext x='32' y='46' font-family='Menlo,Consolas,monospace' font-size='40' font-weight='700' fill='%23b7ff2e' text-anchor='middle'%3Eo_%3C/text%3E%3C/svg%3E">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="observer">
+<meta property="og:title" content="observer — eyes for a text-only model">
+<meta property="og:description" content="Two-file opencode plugin that routes images to a tiny vision model, because the DeepSeek API is text-only.">
+<meta property="og:url" content="https://BANKOLEDO.github.io/observer/">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="observer — eyes for a text-only model">
+<meta name="twitter:description" content="Two-file opencode plugin that gives a text-only model eyes.">
+
+<!-- structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "observer",
+  "description": "Two-file opencode plugin that routes images to a tiny vision model for text-only DeepSeek API models.",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Cross-platform",
+  "author": {
+    "@type": "Person",
+    "name": "dev_olabanks",
+    "url": "https://devolabanks.xyz"
+  }
+}
+</script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <div class="wrap mast">
+    <h1>observ<span class="o">_</span>er</h1>
+    <nav>
+      <a href="#why">why</a>
+      <a href="#how">how</a>
+      <a href="#setup">setup</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero wrap">
+  <h2>your model is&nbsp;text-only.<br>this is its <span class="blink">eyes</span>.</h2>
+  <p class="lede">
+    The DeepSeek API is text-only. The variant you actually run —
+    <b>deepseek-v4-flash</b> — returns "<span class="m">this model does not
+    support image input</span>" the second you paste a screenshot. Vision exists
+    only in the web chat, not in the API. <b>observer</b> is a two-file plugin
+    that works around it — it catches every image you paste, has a <i>tiny</i>
+    vision model read it, and hands the words back. No image pollution. No
+    vision budget on your main model.
+  </p>
+  <div class="actions">
+    <a class="btn" href="#setup">install <small>two files, one minute</small></a>
+    <a class="btn ghost" href="#why">read why</a>
+    <a class="btn ghost" href="https://github.com/BANKOLEDO/observer" title="Star observer on GitHub">star <small>&#9733; on GitHub</small></a>
+  </div>
+</div>
+
+<section id="why">
+  <div class="wrap">
+    <p class="kicker">the problem</p>
+    <h3>deepseek-v4 is text-only at the API. no vision endpoint, no argument.</h3>
+    <p>
+      The api has exactly two names, <b>deepseek-v4-pro</b> and
+      <b>deepseek-v4-flash</b>. Their official capability list is JSON, function
+      calling, thinking mode, and 1M context — the word "image" isn't in it.
+      If you paste a screenshot and ask DeepSeek what's on screen, the model
+      answers honestly: "<span class="m">this model does not support image
+      input.</span>"
+    </p>
+    <p>
+      The vision DeepSeek rolled out lives in the free web chat only; the
+      <b>API exposes no image endpoint at all</b>. So on your normal main
+      model — deepseek-v4-flash, cheap and long-context — a screenshot is just
+      a blob it can't take in. <b>observer</b> steps in: a tiny vision model
+      elsewhere reads the image and hands back plain text DeepSeek can use.
+    </p>
+  </div>
+</section>
+
+<section id="how">
+  <div class="wrap">
+    <p class="kicker">the mechanism</p>
+    <h3>one small pipe, drawn honestly.</h3>
+    <p>No diagram beats a line of prose. Here's the whole shape of it:</p>
+    <div class="flow"><code><span class="m">you paste a screenshot</span>
+<span class="a">  │</span>
+<span class="m">observer</span> saves it, replaces the part with "Image saved: /path/a1b2c3.png"
+<span class="a">  │</span>
+your model — text-only, can't take images —
+<span class="m">calls @observer</span>, the vision sub-agent
+<span class="a">  │</span>
+<span class="m">@observer</span> opens the file, writes a description in plain text
+<span class="a">  v</span>
+words come back <span class="m">— your model answers you.</span></code>
+    </div>
+    <p>
+      The image itself never enters your main context, so a base64 blob never
+      touches DeepSeek's big context window. <b>You pay for pixels exactly once</b>,
+      only for the single image in that message.
+    </p>
+  </div>
+</section>
+
+<section id="setup">
+  <div class="wrap">
+    <p class="kicker">setup</p>
+    <h3>two files, a model, a restart.</h3>
+
+    <div class="filegrid">
+      <div class="file">
+        <div class="path">~/.config/opencode/plugins/<b>observer.js</b></div>
+        <div class="role">the dispatcher — catches images, saves them, asks the sub-agent to read.</div>
+      </div>
+      <div class="file">
+        <div class="path">~/.config/opencode/agents/<b>observer.md</b></div>
+        <div class="role">the vision model's prompt — how to read a stack, a chart, a page, or text.</div>
+      </div>
+    </div>
+
+    <ol class="steps">
+      <li>Drop the two files where they belong — opencode scans them at startup, no config wiring needed.</li>
+      <li>Point the agent at a <b>multimodal</b> model you have a key for. This is the only vision step, so keep it cheap:
+      <pre class="code"><b>model: google/gemini-3.5-flash-lite</b>   <span class="m"># free tier</span>
+<span class="m"># or: openai/gpt-4o, anthropic/claude-sonnet-4-6, moonshotai/kimi-k2.6</span></pre></li>
+      <li>Grant the sub-agent one read permission on the scratch image cache:
+      <pre class="code">{
+  "permission": {
+    "external_directory": {
+      "~/.local/share/opencode/images/**": "allow"
+    }
+  }
+}</pre></li>
+      <li>Restart opencode. Paste a screenshot and ask.</li>
+    </ol>
+
+    <div class="note">
+      Your main model stays whatever it was — <b>deepseek-v4</b>, or the cheapest thing that works. The vision bill is one glance per image, nothing more.
+    </div>
+    <div class="note">
+      Storage is a scratch cache, not a library. Pasted images live in
+      <span class="m">~/.local/share/opencode/images/</span> — when you end a
+      session, delete the folder freely. Nothing is referenced that can't be
+      regenerated; the cache just avoids re-billing identical pastes.
+    </div>
+  </div>
+</section>
+
+<section id="key">
+  <div class="wrap">
+    <p class="kicker">keys</p>
+    <h3>the only secret is the vision key.</h3>
+    <p>
+      Only the tiny vision sub-agent needs an API key — it's the one thing that
+      actually reads pixels. Your DeepSeek main model keeps whatever key it
+      already has.
+    </p>
+    <ol class="steps">
+      <li>Pick any multimodal model whose provider you can access, in
+        <span class="cmd">.config/opencode/agents/observer.md</span>:
+      <pre class="code"><b>model: google/gemini-3.5-flash-lite</b>   <span class="m"># free-tier friendly</span>
+<span class="m"># or: openai/gpt-4o, anthropic/claude-sonnet-4-6, moonshotai/kimi-k2.6</span></pre></li>
+      <li>Give opencode the key for that provider — either log in
+        (<span class="cmd">opencode auth login</span>) or drop the env var:
+      <pre class="code"># gemini
+export OPENCODE_GOOGLE_API_KEY=...
+<span class="m"># openai</span>
+export OPENCODE_OPENAI_API_KEY=...
+<span class="m"># anthropic</span>
+export OPENCODE_ANTHROPIC_API_KEY=...</pre></li>
+      <li>Restart opencode so it reads the key once at startup.</li>
+    </ol>
+    <div class="note">
+      Still getting "<span class="m">@observer can't read the file</span>"?
+      That's a missing or wrong key, or the provider rejects your model string —
+      fix the key, then restart.
+    </div>
+  </div>
+</section>
+
+<section id="files">
+  <div class="wrap">
+    <p class="kicker">what's inside</p>
+    <h3>small, boring, hand-made.</h3>
+    <table>
+      <tr><th>file</th><th>job</th></tr>
+      <tr><td><span class="to">observer.js</span></td><td>The plugin — decodes pasted images, saves them, routes reading through the sub-agent.</td></tr>
+      <tr><td><span class="cmd">observer.md</span></td><td>The vision sub-agent that decided what to read (error log → chart → markup → text).</td></tr>
+      <tr><td><span class="to">README.md</span></td><td>How it fits in all your codebases, cost, troubleshooting.</td></tr>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap row">
+    <span>observer &#183; built as an opencode plugin</span>
+    <span>built by <a href="https://devolabanks.xyz">dev_olabanks</a> &#183; <a href="https://github.com/BANKOLEDO/observer">&#9733; star on GitHub</a></span>
+  </div>
+</footer>
+
+</body>
+</html>
